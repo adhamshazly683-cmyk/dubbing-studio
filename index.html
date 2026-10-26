@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>استوديو الدوبلاج</title>
+<meta name="theme-color" content="#12161d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#12161d;--panel:#1a2029;--panel2:#212935;--line:#2f3a4a;--text:#e8ecf2;--mute:#8d9aae;
+  --orig:#6fa8dc;--take:#f2b84b;--rec:#ff4d4d;--ok:#5fd0a0;--warn:#f2b84b;--bad:#ff6b6b;--accent:#f2b84b;--onacc:#1b1405;
+}
+[data-theme=light]{
+  --bg:#e9ecf1;--panel:#fff;--panel2:#f2f4f8;--line:#cfd6e2;--text:#1c2430;--mute:#5f6b7e;
+  --orig:#2f6eb0;--take:#c27d00;--accent:#c27d00;--onacc:#fff;--ok:#12805a;--warn:#9a6700;--bad:#c62828;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.6 "Segoe UI","Noto Sans Arabic",Tahoma,system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;min-height:36px}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.pri{background:var(--accent);color:var(--onacc);border-color:var(--accent);font-weight:700}
+button.rec{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:700}
+button.sm{padding:2px 8px;min-height:28px;font-size:13px}
+button.on{border-color:var(--accent);color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+input[type=number]{width:84px}
+input[type=range]{padding:0;accent-color:var(--accent)}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0 0 0 12px;font-weight:800}
+header .sp{flex:1}
+#pname{width:180px;font-weight:600}
+nav.tabs{display:flex;gap:4px;padding:8px 16px 0}
+nav.tabs button{border-radius:8px 8px 0 0;border-bottom:none}
+main{padding:12px 16px 40px;display:grid;gap:12px}
+.view{display:none}.view.act{display:grid;gap:12px}
+.studio{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start}
+@media(max-width:900px){.studio{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.card h2{font-size:15px;margin:0 0 8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.stage{background:#000;border-radius:10px;overflow:hidden;position:relative;min-height:180px;display:grid;place-items:center}
+video{width:100%;max-height:46vh;display:block;background:#000}
+.empty{color:var(--mute);padding:28px;text-align:center}
+.time{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;color:var(--mute)}
+#wavewrap{position:relative}
+canvas#wave{width:100%;height:230px;display:block;border-radius:8px;background:var(--bg);direction:ltr;cursor:crosshair}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mute)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:4px}
+.meter{height:14px;background:var(--bg);border:1px solid var(--line);border-radius:7px;overflow:hidden;position:relative;direction:ltr;min-width:160px;flex:1}
+.meter i{position:absolute;inset:0 auto 0 0;width:0;background:var(--ok)}
+.meter b{position:absolute;top:0;bottom:0;width:2px;background:var(--text);left:0}
+.recdot{display:none;color:var(--rec);font-weight:800}
+.recording .recdot{display:inline;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.recording .recdot{animation:none}}
+#cues{display:grid;gap:10px;max-height:78vh;overflow:auto;padding-inline-end:2px}
+.cue{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2);display:grid;gap:6px}
+.cue.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.cue textarea{width:100%;resize:vertical;min-height:44px}
+.take{display:grid;gap:4px;border-top:1px dashed var(--line);padding-top:6px;font-size:13px}
+.take .m{color:var(--mute)}
+.tag{padding:0 6px;border-radius:5px;font-size:12px;border:1px solid var(--line)}
+.tag.ok{color:var(--ok);border-color:var(--ok)}.tag.warn{color:var(--warn);border-color:var(--warn)}.tag.bad{color:var(--bad);border-color:var(--bad)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:start}
+.note{color:var(--mute);font-size:13px}
+.toast{position:fixed;bottom:16px;inset-inline:16px;max-width:520px;margin-inline:auto;background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;display:none;z-index:20}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;max-width:640px;width:calc(100% - 24px);padding:18px}
+dialog::backdrop{background:#0009}
+dialog h3{margin-top:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+label.f{display:grid;gap:3px;font-size:13px;color:var(--mute)}
+label.chk{display:flex;gap:6px;align-items:center}
+ul.cl li{margin:3px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>استوديو الدوبلاج</h1>
+  <input id="pname" aria-label="اسم المشروع" value="مشروع جديد">
+  <button id="bNew">مشروع جديد</button>
+  <button id="bSave">حفظ</button>
+  <button id="bRestore">استعادة آخر مشروع</button>
+  <span class="sp"></span>
+  <button id="bExport" class="pri">تصدير</button>
+  <button id="bSet">الإعدادات</button>
+  <button id="bHelp">المساعدة</button>
+  <button id="bAbout">حول</button>
+  <button id="bTheme" aria-label="تبديل الوضع الداكن والفاتح">☾ / ☀</button>
+</header>
+<nav class="tabs">
+  <button id="tabStudio" class="on">الاستوديو</button>
+  <button id="tabTrain">التدريب</button>
+</nav>
+
+<main>
+<section id="v-studio" class="view studio act">
+  <div style="display:grid;gap:12px;min-width:0">
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <label class="pri sm" style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:8px;cursor:pointer;background:var(--accent);color:var(--onacc);font-weight:700">استيراد فيديو
+          <input id="fVideo" type="file" accept="video/*,.mkv,.mp4,.webm,.mov" hidden></label>
+        <label class="sm" style="display:inline-flex;align-items:center;padding:4px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer">استيراد ترجمة SRT
+          <input id="fSrt" type="file" accept=".srt,.txt" hidden></label>
+        <span id="vinfo" class="note"></span>
+      </div>
+      <div class="stage" id="stage">
+        <video id="vid" playsinline preload="auto"></video>
+        <div class="empty" id="vempty">استورد فيديو لبدء المشروع. تُعالَج الملفات داخل المتصفح ولا تُرفع إلى أي خادم.</div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="bPlay" class="pri">تشغيل</button>
+        <button id="bBack" title="رجوع (←)">رجوع</button>
+        <button id="bFwd" title="تقديم (→)">تقديم</button>
+        <button id="bFPrev" title="إطار للخلف (,)">إطار −</button>
+        <button id="bFNext" title="إطار للأمام (.)">إطار +</button>
+        <select id="rate" aria-label="سرعة التشغيل">
+          <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option>
+        </select>
+        <label class="row note">صوت الفيديو <input id="vvol" type="range" min="0" max="1" step="0.05" value="0.6"></label>
+        <button id="bMute">كتم</button>
+        <span class="time" id="tcur">00:00.00 / 00:00.00</span>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <input id="seek" type="range" min="0" max="1000" value="0" style="flex:1;min-width:140px" aria-label="الخط الزمني">
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button id="bA">تحديد A</button><button id="bB">تحديد B</button>
+        <button id="bLoop">تكرار A↔B</button><button id="bClr">مسح</button>
+        <span class="time" id="abinfo"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:6px">
+        <button id="bRec" class="rec">● تسجيل</button>
+        <span class="recdot">● يسجّل الآن</span>
+        <div class="meter" title="مستوى الميكروفون"><i id="mbar"></i><b id="mpk"></b></div>
+        <span class="time" id="mtxt">— dBFS</span>
+      </div>
+      <div class="note" id="mwarn"></div>
+      <div class="row" style="margin-top:6px">
+        <button id="bZi" class="sm">تكبير</button><button id="bZo" class="sm">تصغير</button><button id="bZf" class="sm">عرض الكل</button>
+        <input id="pan" type="range" min="0" max="1000" value="0" style="flex:1;min-width:120px" aria-label="تمرير الموجة">
+        <div class="legend"><span><i class="dot" style="background:var(--orig)"></i>الصوت الأصلي</span><span><i class="dot" style="background:var(--take)"></i>تسجيلاتك</span></div>
+      </div>
+      <div id="wavewrap"><canvas id="wave" tabindex="0" aria-label="الموجة الصوتية؛ انقر للانتقال إلى نقطة زمنية"></canvas></div>
+      <div class="note" id="wnote">لا يشترط تشابه شكل الموجتين: اختلاف الأداء التمثيلي يغيّر الشكل. المهم هنا مقارنة التوقيت.</div>
+    </div>
+  </div>
+
+  <div class="card" style="min-width:0">
+    <div class="row" style="margin-bottom:8px">
+      <h2 style="margin:0;flex:1">الجُمل والحوار</h2>
+      <button id="bAdd" class="sm">+ جملة من الموضع الحالي</button>
+      <button id="bSrtOut" class="sm">تصدير SRT</button>
+    </div>
+    <div id="cues"></div>
+  </div>
+</section>
+
+<section id="v-train" class="view">
+  <div class="card">
+    <h2>التدريب على جملة</h2>
+    <div class="row">
+      <select id="tcue" aria-label="اختيار الجملة"></select>
+      <button id="tWatch">شاهد المشهد قبل التسجيل</button>
+      <button id="tLoop">كرّر الجملة للاستماع</button>
+      <button id="tRec" class="rec">● سجّل محاولة</button>
+    </div>
+    <p class="note">تعرض الجداول أدناه قياسات فعلية فقط (توقيت، مدة، مستوى). لا يقدّم التطبيق حكمًا على الأداء التمثيلي أو المشاعر.</p>
+    <div id="ttable"></div>
+  </div>
+</section>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<dialog id="dSet">
+  <h3>الإعدادات</h3>
+  <div class="grid2">
+    <label class="f">جهاز الإدخال (الميكروفون)<select id="sDev"></select></label>
+    <label class="f">التمهيد قبل الجملة (ثوانٍ)<input id="sPre" type="number" min="0" max="10" step="0.5"></label>
+    <label class="f">صوت الفيديو أثناء التسجيل (0–1)<input id="sVol" type="number" min="0" max="1" step="0.05"></label>
+    <label class="f">تعويض تأخر الميكروفون (مللي ثانية)<input id="sLat" type="number" min="0" max="500" step="5"></label>
+    <label class="f">مقدار التقديم/الرجوع (ثوانٍ)<input id="sStep" type="number" min="0.5" max="60" step="0.5"></label>
+    <label class="f">معدل إطارات الفيديو للخطوة (يُحدد يدويًا)<input id="sFps" type="number" min="1" max="120" step="1"></label>
+  </div>
+  <p></p>
+  <label class="chk"><input type="checkbox" id="sAuto"> إيقاف التسجيل تلقائيًا بعد نهاية الجملة بقليل</label>
+  <label class="chk"><input type="checkbox" id="sEc"> إلغاء الصدى (من المتصفح)</label>
+  <label class="chk"><input type="checkbox" id="sNs"> تقليل الضوضاء (من المتصفح)</label>
+  <label class="chk"><input type="checkbox" id="sAgc"> ضبط الكسب التلقائي (يُفضّل تعطيله للتمثيل)</label>
+  <p class="note">الإعدادات المتاحة هي ما يدعمه متصفحك وجهازك فقط. معدل العينة وعمق البت يحددهما المتصفح.</p>
+  <div class="row"><button id="sOk" class="pri">تم</button></div>
+</dialog>
+
+<dialog id="dExp">
+  <h3>تصدير الصوت</h3>
+  <label class="chk"><input type="checkbox" id="xOrig"> تضمين الصوت الأصلي في المزيج</label>
+  <label class="f">مستوى الصوت الأصلي (0–1)<input id="xOrigVol" type="number" min="0" max="1" step="0.05" value="0.3"></label>
+  <label class="chk"><input type="checkbox" id="xNorm" checked> رفع المستوى النهائي إلى −1 dBFS (Normalization)</label>
+  <p class="note">يُصدَّر أفضل تسجيل لكل جملة بصيغة WAV أحادي 16-بت. لا يُعدَّل الفيديو الأصلي. دمج الصوت داخل ملف فيديو غير متاح في هذه النسخة (يحتاج مكتبة ترميز خارجية).</p>
+  <div class="row">
+    <button id="xMix" class="pri">تصدير المزيج WAV</button>
+    <button id="xSpk">تصدير كل متحدث منفصلًا</button>
+    <button id="xClose">إغلاق</button>
+  </div>
+</dialog>
+
+<dialog id="dHelp">
+  <h3>المساعدة وحالة الميزات</h3>
+  <p><b>طريقة العمل:</b> استورد فيديو، أضف الجمل (يدويًا أو من ملف SRT)، اختر جملة ثم اضغط «تسجيل». سيعود الفيديو إلى بداية الجملة ويسجّل صوتك مع التشغيل.</p>
+  <p><b>اختصارات:</b> المسافة تشغيل/إيقاف · ← → رجوع/تقديم · ، . إطار · R تسجيل · L تكرار A↔B.</p>
+  <p><b>تعمل فعليًا:</b></p>
+  <ul class="cl">
+    <li>استيراد الفيديو (حسب صيغ متصفحك) والتحكم الكامل بالتشغيل والسرعة وتكرار المقطع.</li>
+    <li>تسجيل الميكروفون بمحاولات متعددة لكل جملة، واختيار أفضل محاولة، وإزاحة دقيقة للتوقيت.</li>
+    <li>عرض الموجة الأصلية وتسجيلاتك على خط زمني مشترك مع تكبير وتمرير، ومقياس مستوى مع تحذير التشويه.</li>
+    <li>قياسات: بدء الكلام ونهايته مقارنة بالجملة، المدة، مستوى الذروة والمتوسط.</li>
+    <li>استيراد/تصدير SRT، حفظ تلقائي داخل المتصفح (IndexedDB)، تصدير WAV.</li>
+  </ul>
+  <p><b>غير منفذة بعد (لا تظهر لها نتائج وهمية):</b> استخراج النص تلقائيًا، التعرف على المتحدثين، مزامنة حركة الفم، تقييم وضوح النطق واكتمال الحوار، المعادل والضاغط وتقليل الضوضاء المتقدم، دمج الصوت داخل الفيديو، الطيف الترددي.</p>
+  <p class="note">استخراج النص ومزامنة الفم يحتاجان نموذجًا خارجيًا (مثل Whisper) وإما خادمًا أو تشغيلًا محليًا عبر WebAssembly؛ ستُضاف في المرحلة الثالثة والرابعة بعد اختبار الأساسيات.</p>
+  <div class="row"><button id="hOk" class="pri">إغلاق</button></div>
+</dialog>
+
+<dialog id="dAbout">
+  <h3>حول التطبيق</h3>
+  <p>استوديو الدوبلاج: صفحة HTML5 واحدة تعمل بالكامل داخل المتصفح. لا تُرسَل أي ملفات أو تسجيلات إلى الإنترنت. يُحفظ المشروع محليًا في المتصفح فقط، ويمكنك حذفه بزر «مشروع جديد».</p>
+  <p class="note">النسخة: المرحلة الأولى + أجزاء من الثانية (الجمل، الإزاحة، المقارنة).</p>
+  <div class="row"><button id="aOk" class="pri">إغلاق</button></div>
+</dialog>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,10);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=t=>{t=Math.max(0,t||0);const m=Math.floor(t/60),s=t-m*60;return String(m).padStart(2,'0')+':'+s.toFixed(2).padStart(5,'0')};
+const db=x=>x>1e-6?20*Math.log10(x):-Infinity;
+const dbs=x=>isFinite(x)?x.toFixed(1)+' dBFS':'صمت';
+
+const DEF={preroll:1,autostop:true,ec:true,ns:true,agc:false,vol:0.25,lat:0,step:5,fps:30,dev:''};
+let S={name:'مشروع جديد',cues:[],settings:{...DEF},videoName:''};
+let videoBlob=null,videoURL=null,origBuf=null,origPeaks=null;
+const takeBlob=new Map(),takeBuf=new Map();
+let selId=null,ac=null;
+let loopA=null,loopB=null,loopOn=false;
+let view={start:0,dur:10};
+const vid=$('#vid');
+
+function ctx(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume(); return ac }
+function toast(msg,ms=3500){const t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',ms)}
+const cueOf=id=>S.cues.find(c=>c.id===id);
+const sel=()=>cueOf(selId);
+
+/* ---------- Persistence (IndexedDB) ---------- */
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('dubstudio',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function saveProject(manual){
+  try{
+    const takes={};for(const [k,v] of takeBlob) takes[k]=v;
+    const d=await idb();
+    await new Promise((res,rej)=>{const tx=d.transaction('p','readwrite');tx.objectStore('p').put({meta:JSON.parse(JSON.stringify(S)),video:videoBlob,takes},'cur');tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});
+    if(manual) toast('تم حفظ المشروع في هذا المتصفح');
+  }catch(e){ if(manual) toast('تعذّر الحفظ في هذا المتصفح: '+e.message) }
+}
+let saveT;const autosave=()=>{clearTimeout(saveT);saveT=setTimeout(()=>saveProject(false),1500)};
+async function restoreProject(){
+  try{
+    const d=await idb();
+    const rec=await new Promise((res,rej)=>{const r=d.transaction('p').objectStore('p').get('cur');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+    if(!rec){toast('لا يوجد مشروع محفوظ');return}
+    resetState();
+    S=rec.meta;S.settings={...DEF,...S.settings};
+    for(const k in rec.takes) takeBlob.set(k,rec.takes[k]);
+    if(rec.video) await loadVideo(rec.video,S.videoName,true);
+    const c=ctx();
+    for(const [k,b] of takeBlob){ try{takeBuf.set(k,await c.decodeAudioData(await b.arrayBuffer()))}catch(e){} }
+    $('#pname').value=S.name;selId=S.cues[0]?.id||null;renderAll();toast('تمت استعادة المشروع');
+  }catch(e){toast('تعذّرت الاستعادة: '+e.message)}
+}
+function resetState(){
+  S={name:'مشروع جديد',cues:[],settings:{...DEF},videoName:''};
+  takeBlob.clear();takeBuf.clear();origBuf=null;origPeaks=null;videoBlob=null;
+  if(videoURL){URL.revokeObjectURL(videoURL);videoURL=null}
+  vid.removeAttribute('src');vid.load();$('#vempty').style.display='';vid.style.display='none';
+  selId=null;loopA=loopB=null;loopOn=false;
+}
+
+/* ---------- Video ---------- */
+async function loadVideo(blob,name,silent){
+  if(videoURL) URL.revokeObjectURL(videoURL);
+  videoBlob=blob;S.videoName=name||blob.name||'video';
+  videoURL=URL.createObjectURL(blob);
+  vid.src=videoURL;
+  await new Promise(res=>{vid.onloadedmetadata=res;vid.onerror=res});
+  if(!vid.duration||!isFinite(vid.duration)||!vid.videoWidth&&!vid.videoHeight&&blob.type.startsWith('video')){
+    if(!vid.duration){toast('صيغة الفيديو غير مدعومة في هذا المتصفح. جرّب MP4 (H.264/AAC) أو WebM.',6000);return}
+  }
+  $('#vempty').style.display='none';vid.style.display='block';
+  $('#vinfo').textContent=S.videoName+' · '+fmt(vid.duration);
+  view={start:0,dur:Math.max(1,vid.duration)};
+  vid.volume=+$('#vvol').value;
+  decodeOriginal(blob);
+  renderAll();
+}
+async function decodeOriginal(blob){
+  origBuf=null;origPeaks=null;
+  if(blob.size>600*1024*1024){toast('الملف كبير؛ لن تُعرض الموجة الأصلية، لكن التسجيل يعمل.',5000);return}
+  try{
+    $('#wnote').textContent='جارٍ تحليل الصوت الأصلي لعرض الموجة…';
+    const buf=await ctx().decodeAudioData(await blob.arrayBuffer());
+    origBuf=buf;
+    const PPS=100,n=Math.ceil(buf.duration*PPS),p=new Float32Array(n),ch=buf.numberOfChannels,spb=buf.sampleRate/PPS;
+    const data=[];for(let c=0;c<ch;c++)data.push(buf.getChannelData(c));
+    for(let i=0;i<n;i++){let m=0;const a=Math.floor(i*spb),b=Math.min(buf.length,Math.floor((i+1)*spb)),st=Math.max(1,Math.floor((b-a)/40));
+      for(let c=0;c<ch;c++){const d=data[c];for(let j=a;j<b;j+=st){const v=Math.abs(d[j]);if(v>m)m=v}}p[i]=m}
+    origPeaks={p,PPS};
+    $('#wnote').textContent='لا يشترط تشابه شكل الموجتين: اختلاف الأداء التمثيلي يغيّر الشكل. المهم هنا مقارنة التوقيت.';
+  }catch(e){$('#wnote').textContent='تعذّر استخراج الموجة الأصلية من هذا الملف (قد لا يحتوي صوتًا أو صيغته غير مدعومة للتحليل).'}
+}
+$('#fVideo').onchange=e=>{const f=e.target.files[0];if(f){loadVideo(f,f.name);autosave()}e.target.value=''};
+$('#bPlay').onclick=()=>togglePlay();
+function togglePlay(){ if(!videoBlob) return toast('استورد فيديو أولاً'); if(vid.paused){stopTakePlayback();vid.play()}else vid.pause() }
+vid.onplay=()=>$('#bPlay').textContent='إيقاف مؤقت';
+vid.onpause=()=>{$('#bPlay').textContent='تشغيل';stopTakePlayback()};
+const seekBy=d=>{vid.currentTime=clamp(vid.currentTime+d,0,vid.duration||0)};
+$('#bBack').onclick=()=>seekBy(-S.settings.step);
+$('#bFwd').onclick=()=>seekBy(S.settings.step);
+$('#bFPrev').onclick=()=>{vid.pause();seekBy(-1/S.settings.fps)};
+$('#bFNext').onclick=()=>{vid.pause();seekBy(1/S.settings.fps)};
+$('#rate').onchange=e=>vid.playbackRate=+e.target.value;
+$('#vvol').oninput=e=>{vid.volume=+e.target.value;vid.muted=false;$('#bMute').textContent='كتم'};
+$('#bMute').onclick=()=>{vid.muted=!vid.muted;$('#bMute').textContent=vid.muted?'إلغاء الكتم':'كتم'};
+$('#seek').oninput=e=>{if(vid.duration)vid.currentTime=e.target.value/1000*vid.duration};
+$('#bA').onclick=()=>{loopA=vid.currentTime;if(loopB!==null&&loopB<=loopA)loopB=null;abUpd()};
+$('#bB').onclick=()=>{loopB=vid.currentTime;if(loopA===null||loopA>=loopB)loopA=0;abUpd()};
+$('#bLoop').onclick=()=>{if(loopA===null||loopB===null)return toast('حدّد النقطتين A و B أولاً');loopOn=!loopOn;abUpd()};
+$('#bClr').onclick=()=>{loopA=loopB=null;loopOn=false;abUpd()};
+function abUpd(){$('#abinfo').textContent=(loopA!==null?'A '+fmt(loopA):'')+(loopB!==null?'  B '+fmt(loopB):'');$('#bLoop').classList.toggle('on',loopOn)}
+function loopCue(c,pre){loopA=Math.max(0,c.start-pre);loopB=c.end+0.3;loopOn=true;abUpd();vid.currentTime=loopA;stopTakePlayback();vid.play()}
+
+/* ---------- Cues ---------- */
+function addCue(start,end,text){
+  const c={id:uid(),start:+start,end:+end,text:text||'',speaker:'',takes:[],bestId:null};
+  S.cues.push(c);S.cues.sort((a,b)=>a.start-b.start);selId=c.id;renderAll();autosave();return c;
+}
+$('#bAdd').onclick=()=>{if(!videoBlob)return toast('استورد فيديو أولاً');const t=vid.currentTime;addCue(t,Math.min(vid.duration,t+3),'')};
+$('#fSrt').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const txt=(await f.text()).replace(/\r/g,'');let n=0;
+  for(const blk of txt.split(/\n\s*\n/)){
+    const m=blk.match(/(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)/);if(!m)continue;
+    const t=(h,mi,s,ms)=>+h*3600+ +mi*60+ +s+ +ms.padEnd(3,'0').slice(0,3)/1000;
+    const lines=blk.split('\n');const li=lines.findIndex(l=>l.includes('-->'));
+    S.cues.push({id:uid(),start:t(m[1],m[2],m[3],m[4]),end:t(m[5],m[6],m[7],m[8]),text:lines.slice(li+1).join('\n').replace(/<[^>]+>/g,'').trim(),speaker:'',takes:[],bestId:null});n++;
+  }
+  S.cues.sort((a,b)=>a.start-b.start);if(!selId&&S.cues[0])selId=S.cues[0].id;
+  renderAll();autosave();toast(n?`تم استيراد ${n} جملة`:'لم يُعثر على جمل صالحة في الملف');
+};
+$('#bSrtOut').onclick=()=>{
+  if(!S.cues.length)return toast('لا توجد جمل للتصدير');
+  const T=t=>{const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=Math.floor(t%60),ms=Math.round((t-Math.floor(t))*1000);return [h,m,s].map(x=>String(x).padStart(2,'0')).join(':')+','+String(ms).padStart(3,'0')};
+  const out=S.cues.map((c,i)=>`${i+1}\n${T(c.start)} --> ${T(c.end)}\n${c.text}\n`).join('\n');
+  dl(new Blob([out],{type:'text/plain;charset=utf-8'}),(S.name||'dub')+'.srt');
+};
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+
+/* ---------- Analysis ---------- */
+function analyze(buf){
+  const d=buf.getChannelData(0),sr=buf.sampleRate;let peak=0;
+  for(let i=0;i<d.length;i++){const v=Math.abs(d[i]);if(v>peak)peak=v}
+  const w=Math.max(1,Math.floor(sr*0.01));let first=-1,last=-1;const thr=peak*0.08;
+  if(peak>0.003){
+    for(let i=0;i+w<=d.length;i+=w){let s=0;for(let j=0;j<w;j++)s+=d[i+j]*d[i+j];const r=Math.sqrt(s/w);if(r>thr){if(first<0)first=i;last=i+w}}
+  }
+  let rms=0;
+  if(first>=0){let s=0;for(let i=first;i<last;i++)s+=d[i]*d[i];rms=Math.sqrt(s/(last-first))}
+  return {peak,rms,onset:first>=0?first/sr:null,end:first>=0?last/sr:null};
+}
+function metrics(c,t){
+  const m=t.m||{};if(m.onset==null)return {silent:true,peak:m.peak||0};
+  const avail=Math.max(0.05,c.end-c.start),base=t.start+t.offset;
+  const sS=base+m.onset,sE=base+m.end,dur=sE-sS;
+  const delay=sS-c.start,endDiff=sE-c.end;
+  return {silent:false,avail,delay,endDiff,dur,
+    tScore:clamp(100*(1-Math.abs(delay)/avail),0,100),
+    dScore:clamp(100*(1-Math.abs(dur-avail)/avail),0,100),
+    peak:m.peak,rms:m.rms,clip:m.peak>=0.99,low:db(m.rms)<-35};
+}
+const sgn=x=>(x>=0?'+':'−')+Math.abs(x*1000).toFixed(0)+' مث';
+
+/* ---------- Recording ---------- */
+let rec=null,recStream=null,recChunks=[],recCue=null,recT0=0,meterRAF=0,anal=null,peakHold=0,recSrc=null;
+function mimePick(){for(const t of['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'])if(window.MediaRecorder&&MediaRecorder.isTypeSupported(t))return t;return''}
+async function startRec(cue){
+  if(rec)return;
+  if(!videoBlob)return toast('استورد فيديو أولاً');
+  if(!window.MediaRecorder||!navigator.mediaDevices)return toast('المتصفح لا يدعم تسجيل الصوت. استخدم Chrome أو Firefox أو Safari حديثًا عبر https أو ملف محلي.',6000);
+  const st=S.settings;
+  try{
+    recStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:st.dev?{exact:st.dev}:undefined,echoCancellation:st.ec,noiseSuppression:st.ns,autoGainControl:st.agc}});
+  }catch(e){
+    toast(e.name==='NotAllowedError'?'تم رفض إذن الميكروفون. اسمح به من إعدادات المتصفح ثم أعد المحاولة.':e.name==='NotFoundError'?'لم يُعثر على ميكروفون متصل.':'خطأ في الميكروفون: '+e.message,6000);return;
+  }
+  const c=ctx();recSrc=c.createMediaStreamSource(recStream);anal=c.createAnalyser();anal.fftSize=1024;recSrc.connect(anal);
+  recChunks=[];const mt=mimePick();
+  rec=mt?new MediaRecorder(recStream,{mimeType:mt}):new MediaRecorder(recStream);
+  rec.ondataavailable=e=>{if(e.data.size)recChunks.push(e.data)};
+  rec.onstop=finishRec;
+  recCue=cue||null;loopOn=false;abUpd();stopTakePlayback();vid.pause();
+  const pre=cue?Math.max(0,cue.start-st.preroll):vid.currentTime;
+  vid.currentTime=pre;await new Promise(r=>{vid.onseeked=()=>{vid.onseeked=null;r()};setTimeout(r,800)});
+  vid.volume=st.vol;vid.muted=false;
+  try{await vid.play()}catch(e){}
+  recT0=vid.currentTime;rec.start(200);
+  document.body.classList.add('recording');$('#bRec').textContent='■ إيقاف التسجيل';peakHold=0;meterLoop();
+}
+function stopRec(){if(rec&&rec.state!=='inactive'){rec.stop()}vid.pause()}
+async function finishRec(){
+  cancelAnimationFrame(meterRAF);document.body.classList.remove('recording');$('#bRec').textContent='● تسجيل';
+  $('#mbar').style.width='0';$('#mtxt').textContent='— dBFS';
+  vid.volume=+$('#vvol').value;
+  try{recSrc.disconnect()}catch(e){}
+  recStream.getTracks().forEach(t=>t.stop());
+  const blob=new Blob(recChunks,{type:rec.mimeType||recChunks[0]?.type||'audio/webm'});rec=null;
+  try{
+    const buf=await ctx().decodeAudioData(await blob.arrayBuffer());
+    let cue=recCue;
+    if(!cue){cue=addCue(recT0,recT0+buf.duration,'تسجيل حر')}
+    const t={id:uid(),start:recT0,dur:buf.duration,offset:-S.settings.lat/1000,name:'محاولة '+(cue.takes.length+1),m:analyze(buf)};
+    cue.takes.push(t);cue.bestId=t.id;takeBlob.set(t.id,blob);takeBuf.set(t.id,buf);selId=cue.id;
+    renderAll();autosave();
+    const r=metrics(cue,t);toast(r.silent?'التسجيل صامت تقريبًا. تحقق من الميكروفون ومستوى الإدخال.':'تم حفظ المحاولة. راجع القياسات تحت الجملة.');
+  }catch(e){toast('تعذّر معالجة التسجيل: '+e.message,6000)}
+}
+function meterLoop(){
+  const a=new Float32Array(anal.fftSize);
+  const f=()=>{
+    if(!rec)return;
+    anal.getFloatTimeDomainData(a);let pk=0,s=0;for(const v of a){const x=Math.abs(v);if(x>pk)pk=x;s+=v*v}
+    const r=Math.sqrt(s/a.length);peakHold=Math.max(peakHold*0.995,pk);
+    const pct=x=>clamp((db(x)+60)/60,0,1)*100;
+    const bar=$('#mbar');bar.style.width=pct(r)+'%';bar.style.background=pk>=0.98?'var(--bad)':db(pk)>-6?'var(--warn)':'var(--ok)';
+    $('#mpk').style.left=pct(peakHold)+'%';$('#mtxt').textContent=dbs(db(r));
+    $('#mwarn').textContent=pk>=0.98?'تحذير: اقتراب من التشويه الرقمي. ابتعد عن الميكروفون أو اخفض الإدخال.':(db(peakHold)<-30&&vid.currentTime-recT0>1.5?'المستوى منخفض وقد يؤثر في الوضوح. اقترب من الميكروفون.':'');
+    if(recCue&&S.settings.autostop&&vid.currentTime>recCue.end+0.4){stopRec();return}
+    if(vid.ended){stopRec();return}
+    meterRAF=requestAnimationFrame(f);
+  };f();
+}
+$('#bRec').onclick=()=>{rec?stopRec():startRec(sel())};
+
+/* ---------- Take playback ---------- */
+let srcs=[];
+function stopTakePlayback(){srcs.forEach(s=>{try{s.stop()}catch(e){}});srcs=[]}
+function playTake(c,t,withVideo){
+  const buf=takeBuf.get(t.id);if(!buf)return toast('بيانات هذا التسجيل غير متاحة');
+  const a=ctx();stopTakePlayback();vid.pause();
+  if(withVideo&&videoBlob){
+    const t0=Math.max(0,Math.min(c.start,t.start+t.offset)-0.5);
+    vid.currentTime=t0;vid.volume=S.settings.vol;
+    vid.onseeked=()=>{vid.onseeked=null;
+      vid.play().then(()=>{
+        const at=t.start+t.offset-t0,s=a.createBufferSource();s.buffer=buf;s.connect(a.destination);
+        if(at>=0)s.start(a.currentTime+at);else s.start(a.currentTime,-at);srcs.push(s);
+      });
+    };
+  }else{const s=a.createBufferSource();s.buffer=buf;s.connect(a.destination);s.start();srcs.push(s)}
+}
+
+/* ---------- WAV ---------- */
+function encodeWav(data,sr){
+  const b=new ArrayBuffer(44+data.length*2),v=new DataView(b);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  w(0,'RIFF');v.setUint32(4,36+data.length*2,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,data.length*2,true);
+  for(let i=0;i<data.length;i++){const x=clamp(data[i],-1,1);v.setInt16(44+i*2,x<0?x*0x8000:x*0x7fff,true)}
+  return new Blob([b],{type:'audio/wav'});
+}
+function mixTakes(cues,withOrig,ov,norm){
+  const sr=ctx().sampleRate;let end=0;const list=[];
+  for(const c of cues){const t=c.takes.find(x=>x.id===c.bestId);const b=t&&takeBuf.get(t.id);if(b){list.push([t,b]);end=Math.max(end,t.start+t.offset+b.duration)}}
+  if(withOrig&&origBuf)end=Math.max(end,origBuf.duration);
+  if(!list.length&&!(withOrig&&origBuf))return null;
+  const out=new Float32Array(Math.ceil(end*sr)+1);
+  if(withOrig&&origBuf){const o=origBuf,n=Math.min(out.length,Math.floor(o.duration*sr)),k=o.sampleRate/sr,chs=[...Array(o.numberOfChannels).keys()].map(i=>o.getChannelData(i));
+    for(let i=0;i<n;i++){let s=0;const j=Math.floor(i*k);for(const d of chs)s+=d[j]||0;out[i]+=s/chs.length*ov}}
+  for(const [t,b] of list){const d=b.getChannelData(0),k=b.sampleRate/sr,off=Math.floor((t.start+t.offset)*sr);
+    for(let i=0;i<Math.floor(b.length/k);i++){const p=off+i;if(p>=0&&p<out.length)out[p]+=d[Math.floor(i*k)]}}
+  let pk=0;for(let i=0;i<out.length;i++){const v=Math.abs(out[i]);if(v>pk)pk=v}
+  if(pk>0){const g=norm?0.891/pk:(pk>1?1/pk:1);if(norm||pk>1)for(let i=0;i<out.length;i++)out[i]*=g}
+  return encodeWav(out,sr);
+}
+$('#bExport').onclick=()=>$('#dExp').showModal();
+$('#xClose').onclick=()=>$('#dExp').close();
+$('#xMix').onclick=()=>{
+  const b=mixTakes(S.cues,$('#xOrig').checked,+$('#xOrigVol').value,$('#xNorm').checked);
+  if(!b)return toast('لا توجد تسجيلات لتصديرها بعد');dl(b,(S.name||'dub')+'-mix.wav');
+};
+$('#xSpk').onclick=()=>{
+  const g={};S.cues.forEach(c=>{(g[c.speaker||'بدون-اسم']??=[]).push(c)});let n=0;
+  for(const k in g){const b=mixTakes(g[k],false,0,$('#xNorm').checked);if(b){dl(b,`${S.name}-${k}.wav`);n++}}
+  if(!n)toast('لا توجد تسجيلات لتصديرها بعد');
+};
+
+/* ---------- Waveform ---------- */
+const cv=$('#wave'),g=cv.getContext('2d');
+const palette=()=>{const s=getComputedStyle(document.documentElement);return{bg:s.getPropertyValue('--bg'),orig:s.getPropertyValue('--orig'),take:s.getPropertyValue('--take'),line:s.getPropertyValue('--line'),text:s.getPropertyValue('--text'),mute:s.getPropertyValue('--mute'),accent:s.getPropertyValue('--accent')}};
+function draw(){
+  const dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
+  if(cv.width!==W*dpr||cv.height!==H*dpr){cv.width=W*dpr;cv.height=H*dpr}
+  g.setTransform(dpr,0,0,dpr,0,0);const P=palette();
+  g.fillStyle=P.bg;g.fillRect(0,0,W,H);
+  const D=vid.duration||0;
+  if(!D){g.fillStyle=P.mute;g.font='14px sans-serif';g.textAlign='center';g.fillText('الموجة تظهر بعد استيراد الفيديو',W/2,H/2);requestAnimationFrame(draw);return}
+  const vs=view.start,vd=view.dur,X=t=>(t-vs)/vd*W,half=H/2;
+  // cue bands
+  for(const c of S.cues){const x1=X(c.start),x2=X(c.end);if(x2<0||x1>W)continue;
+    g.fillStyle=c.id===selId?'rgba(242,184,75,.18)':'rgba(140,160,190,.10)';g.fillRect(x1,0,Math.max(1,x2-x1),H)}
+  // ruler
+  g.strokeStyle=P.line;g.fillStyle=P.mute;g.font='11px sans-serif';g.textAlign='left';
+  const stepT=[0.1,0.25,0.5,1,2,5,10,15,30,60,120,300].find(s=>s/vd*W>70)||600;
+  for(let t=Math.ceil(vs/stepT)*stepT;t<vs+vd;t+=stepT){const x=X(t);g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();g.fillText(fmt(t),x+3,11)}
+  g.beginPath();g.moveTo(0,half);g.lineTo(W,half);g.stroke();
+  // original (top lane)
+  if(origPeaks){g.fillStyle=P.orig;const {p,PPS}=origPeaks,lane=half/2-8,cy=half/2+8;
+    for(let x=0;x<W;x++){const a=Math.floor((vs+x/W*vd)*PPS),b=Math.max(a+1,Math.floor((vs+(x+1)/W*vd)*PPS));let m=0;for(let i=a;i<b&&i<p.length;i++)if(p[i]>m)m=p[i];
+      const h=Math.max(m>0?1:0,m*lane);g.fillRect(x,cy-h,1,h*2)}}
+  // takes (bottom lane)
+  const lane=half/2-8,cy=half+half/2+8;
+  for(const c of S.cues){const t=c.takes.find(x=>x.id===c.bestId),b=t&&takeBuf.get(t.id);if(!b)continue;
+    const t0=t.start+t.offset,t1=t0+b.duration;if(t1<vs||t0>vs+vd)continue;
+    const d=b.getChannelData(0),sr=b.sampleRate;g.fillStyle=c.id===selId?P.take:P.take+'99';
+    const x1=Math.max(0,Math.floor(X(t0))),x2=Math.min(W,Math.ceil(X(t1)));
+    for(let x=x1;x<x2;x++){const ta=vs+x/W*vd-t0,tb=vs+(x+1)/W*vd-t0;const a=Math.max(0,Math.floor(ta*sr)),e=Math.min(d.length,Math.floor(tb*sr));
+      const st=Math.max(1,Math.floor((e-a)/30));let m=0;for(let i=a;i<e;i+=st){const v=Math.abs(d[i]);if(v>m)m=v}
+      const h=Math.max(m>0?1:0,m*lane);g.fillRect(x,cy-h,1,h*2)}
+  }
+  // markers for selected cue
+  const sc=sel();if(sc){g.strokeStyle=P.accent;g.lineWidth=1.5;[sc.start,sc.end].forEach(v=>{const x=X(v);g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke()});g.lineWidth=1}
+  if(loopA!==null&&loopB!==null){g.fillStyle='rgba(95,208,160,.12)';g.fillRect(X(loopA),0,X(loopB)-X(loopA),H)}
+  // playhead
+  const px=X(vid.currentTime);g.strokeStyle='#ff4d4d';g.beginPath();g.moveTo(px,0);g.lineTo(px,H);g.stroke();
+  // UI sync
+  $('#tcur').textContent=fmt(vid.currentTime)+' / '+fmt(D);
+  if(document.activeElement!==$('#seek'))$('#seek').value=D?vid.currentTime/D*1000:0;
+  if(document.activeElement!==$('#pan'))$('#pan').value=D>view.dur?view.start/(D-view.dur)*1000:0;
+  if(loopOn&&loopB!==null&&vid.currentTime>=loopB&&!rec){vid.currentTime=loopA}
+  requestAnimationFrame(draw);
+}
+cv.onclick=e=>{const r=cv.getBoundingClientRect();if(vid.duration)vid.currentTime=clamp(view.start+(e.clientX-r.left)/r.width*view.dur,0,vid.duration)};
+cv.addEventListener('wheel',e=>{if(!vid.duration)return;e.preventDefault();const r=cv.getBoundingClientRect(),f=(e.clientX-r.left)/r.width,tc=view.start+f*view.dur;zoom(e.deltaY<0?0.8:1.25,tc,f)},{passive:false});
+function zoom(k,tc,f=0.5){const D=vid.duration||1;const nd=clamp(view.dur*k,0.5,D);view.dur=nd;view.start=clamp(tc-f*nd,0,Math.max(0,D-nd))}
+$('#bZi').onclick=()=>zoom(0.6,vid.currentTime);
+$('#bZo').onclick=()=>zoom(1.7,vid.currentTime);
+$('#bZf').onclick=()=>{view={start:0,dur:Math.max(1,vid.duration||10)}};
+$('#pan').oninput=e=>{const D=vid.duration||0;view.start=Math.max(0,(D-view.dur)*e.target.value/1000)};
+
+/* ---------- Render ---------- */
+function renderAll(){renderCues();renderTrain();$('#pname').value=S.name}
+function tagFor(v,ok,warn){return v>=ok?'ok':v>=warn?'warn':'bad'}
+function takeHTML(c,t){
+  const m=metrics(c,t);let info;
+  if(m.silent)info='<span class="tag bad">تسجيل صامت تقريبًا</span>';
+  else info=`<span class="tag ${tagFor(m.tScore,80,50)}">بدء الكلام ${sgn(m.delay)}</span> <span class="tag ${tagFor(m.dScore,80,50)}">النهاية ${sgn(m.endDiff)}</span> <span class="tag ${tagFor(m.dScore,80,50)}">المدة ${m.dur.toFixed(2)} من ${m.avail.toFixed(2)} ث</span> <span class="tag ${m.clip?'bad':'ok'}">ذروة ${dbs(db(m.peak))}</span> <span class="tag ${m.low?'warn':'ok'}">متوسط ${dbs(db(m.rms))}</span>`;
+  return `<div class="take" data-tid="${t.id}">
+    <div class="row"><label class="row"><input type="radio" name="b${c.id}" data-act="best" ${c.bestId===t.id?'checked':''}> <b>${esc(t.name)}</b></label>
+      <button class="sm" data-act="tplay">استمع</button><button class="sm" data-act="tvid">مع الفيديو</button><button class="sm" data-act="twav">WAV</button><button class="sm" data-act="tdel">حذف</button>
+      <label class="row note">إزاحة (مث) <input type="number" step="10" value="${Math.round(t.offset*1000)}" data-f="offset"></label></div>
+    <div class="m">${info}</div></div>`;
+}
+function renderCues(){
+  const box=$('#cues');
+  if(!S.cues.length){box.innerHTML='<div class="empty">لا توجد جمل بعد. استورد ملف SRT أو أضف جملة من الموضع الحالي في الفيديو.</div>';return}
+  box.innerHTML=S.cues.map((c,i)=>`<div class="cue ${c.id===selId?'sel':''}" data-id="${c.id}">
+    <div class="row"><b>${i+1}</b>
+      <label class="row note">من <input type="number" step="0.01" min="0" value="${c.start.toFixed(2)}" data-f="start"></label>
+      <button class="sm" data-act="capS" title="التقاط الموضع الحالي">⏎</button>
+      <label class="row note">إلى <input type="number" step="0.01" min="0" value="${c.end.toFixed(2)}" data-f="end"></label>
+      <button class="sm" data-act="capE" title="التقاط الموضع الحالي">⏎</button>
+      <span class="note">المتاح ${(c.end-c.start).toFixed(2)} ث</span></div>
+    <textarea data-f="text" placeholder="نص الجملة" rows="2">${esc(c.text)}</textarea>
+    <div class="row"><input data-f="speaker" placeholder="المتحدث/الشخصية" value="${esc(c.speaker)}" style="width:150px">
+      <button class="sm" data-act="go">انتقل</button><button class="sm" data-act="loop">كرّر</button>
+      <button class="sm rec" data-act="rec">● سجّل</button><button class="sm" data-act="split">تقسيم</button><button class="sm" data-act="del">حذف</button></div>
+    ${c.takes.map(t=>takeHTML(c,t)).join('')}</div>`).join('');
+}
+function renderTrain(){
+  const s=$('#tcue');s.innerHTML=S.cues.map((c,i)=>`<option value="${c.id}" ${c.id===selId?'selected':''}>${i+1}. ${esc((c.text||'بدون نص').slice(0,40))}</option>`).join('')||'<option>لا توجد جمل</option>';
+  const c=sel(),box=$('#ttable');
+  if(!c||!c.takes.length){box.innerHTML='<div class="empty">لا توجد محاولات لهذه الجملة بعد.</div>';return}
+  box.innerHTML=`<table><thead><tr><th>المحاولة</th><th>بدء الكلام</th><th>نهاية الكلام</th><th>توافق التوقيت</th><th>توافق المدة</th><th>الذروة</th><th>المتوسط</th></tr></thead><tbody>`+
+  c.takes.map(t=>{const m=metrics(c,t);if(m.silent)return `<tr><td>${esc(t.name)}</td><td colspan="6">لا يتوفر تقييم موثوق (التسجيل صامت تقريبًا)</td></tr>`;
+    return `<tr><td>${esc(t.name)}</td><td>${sgn(m.delay)}</td><td>${sgn(m.endDiff)}</td><td>${m.tScore.toFixed(0)}%</td><td>${m.dScore.toFixed(0)}%</td><td>${dbs(db(m.peak))}</td><td>${dbs(db(m.rms))}</td></tr>`}).join('')+
+  `</tbody></table>
+  <p class="note">طريقة الحساب: توافق التوقيت = 100 − (|فرق بدء الكلام عن بداية الجملة| ÷ المدة المتاحة × 100). توافق المدة = 100 − (|مدة الكلام − المدة المتاحة| ÷ المدة المتاحة × 100). بدء الكلام ونهايته يُكتشفان بعتبة طاقة صوتية، وقد يخطئان مع الضوضاء أو الهمس. هذه النسب تقيس التوقيت فقط ولا تقيس جودة التمثيل.</p>
+  <p class="note">وضوح النطق، اكتمال الحوار، ومزامنة الفم: لا يتوفر تقييم موثوق في هذه النسخة.</p>`;
+}
+/* events */
+$('#cues').addEventListener('click',e=>{
+  const card=e.target.closest('.cue');if(!card)return;const c=cueOf(card.dataset.id);
+  const b=e.target.closest('[data-act]');
+  if(c.id!==selId&&!(e.target.closest('input,textarea')&&false)){selId=c.id;document.querySelectorAll('.cue').forEach(x=>x.classList.toggle('sel',x.dataset.id===c.id));renderTrain()}
+  if(!b)return;const act=b.dataset.act,tn=b.closest('.take'),t=tn&&c.takes.find(x=>x.id===tn.dataset.tid);
+  if(act==='go'){vid.currentTime=Math.max(0,c.start-S.settings.preroll)}
+  else if(act==='loop'){if(!videoBlob)return toast('استورد فيديو أولاً');loopCue(c,S.settings.preroll)}
+  else if(act==='rec'){rec?stopRec():startRec(c)}
+  else if(act==='capS'){c.start=vid.currentTime;renderAll();autosave()}
+  else if(act==='capE'){c.end=Math.max(c.start+0.1,vid.currentTime);renderAll();autosave()}
+  else if(act==='del'){if(confirm('حذف الجملة وجميع تسجيلاتها؟')){c.takes.forEach(t=>{takeBlob.delete(t.id);takeBuf.delete(t.id)});S.cues=S.cues.filter(x=>x!==c);selId=S.cues[0]?.id||null;renderAll();autosave()}}
+  else if(act==='split'){const mid=(c.start+c.end)/2,words=c.text.split(/\s+/),h=Math.ceil(words.length/2);
+    const n={id:uid(),start:mid,end:c.end,text:words.slice(h).join(' '),speaker:c.speaker,takes:[],bestId:null};c.end=mid;c.text=words.slice(0,h).join(' ');S.cues.push(n);S.cues.sort((a,b)=>a.start-b.start);renderAll();autosave()}
+  else if(act==='best'&&t){c.bestId=t.id;autosave()}
+  else if(act==='tplay'&&t)playTake(c,t,false);
+  else if(act==='tvid'&&t)playTake(c,t,true);
+  else if(act==='twav'&&t){const bf=takeBuf.get(t.id);if(bf)dl(encodeWav(bf.getChannelData(0),bf.sampleRate),`${S.name}-${t.name}.wav`)}
+  else if(act==='tdel'&&t){if(confirm('حذف هذه المحاولة فقط؟')){c.takes=c.takes.filter(x=>x!==t);takeBlob.delete(t.id);takeBuf.delete(t.id);if(c.bestId===t.id)c.bestId=c.takes.at(-1)?.id||null;renderAll();autosave()}}
+});
+$('#cues').addEventListener('change',e=>{
+  const f=e.target.dataset.f;if(!f)return;const card=e.target.closest('.cue'),c=cueOf(card.dataset.id),tn=e.target.closest('.take');
+  if(tn){const t=c.takes.find(x=>x.id===tn.dataset.tid);if(f==='offset')t.offset=(+e.target.value||0)/1000}
+  else if(f==='text'||f==='speaker')c[f]=e.target.value;
+  else if(f==='start'||f==='end'){c[f]=Math.max(0,+e.target.value||0);if(c.end<=c.start)c.end=c.start+0.1;S.cues.sort((a,b)=>a.start-b.start)}
+  renderAll();autosave();
+});
+$('#tcue').onchange=e=>{selId=e.target.value;renderAll()};
+$('#tWatch').onclick=()=>{const c=sel();if(!c||!videoBlob)return toast('اختر جملة بعد استيراد الفيديو');loopOn=false;abUpd();stopTakePlayback();vid.currentTime=Math.max(0,c.start-2);vid.volume=+$('#vvol').value;vid.play()};
+$('#tLoop').onclick=()=>{const c=sel();if(!c||!videoBlob)return toast('اختر جملة بعد استيراد الفيديو');loopCue(c,S.settings.preroll)};
+$('#tRec').onclick=()=>{const c=sel();if(!c)return toast('اختر جملة أولاً');rec?stopRec():startRec(c)};
+
+/* ---------- Tabs, theme, dialogs, project ---------- */
+function tab(n){['studio','train'].forEach(k=>{$('#v-'+k).classList.toggle('act',k===n);$('#tab'+k[0].toUpperCase()+k.slice(1)).classList.toggle('on',k===n)});if(n==='train')renderTrain()}
+$('#tabStudio').onclick=()=>tab('studio');$('#tabTrain').onclick=()=>tab('train');
+function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('dub-theme',t)}catch(e){}}
+$('#bTheme').onclick=()=>setTheme(document.documentElement.dataset.theme==='light'?'dark':'light');
+(()=>{let t;try{t=localStorage.getItem('dub-theme')}catch(e){}setTheme(t||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'))})();
+$('#pname').onchange=e=>{S.name=e.target.value||'مشروع';autosave()};
+$('#bNew').onclick=()=>{if(confirm('إنشاء مشروع جديد؟ سيُغلق المشروع الحالي (الحفظ التلقائي سيُستبدل عند أول تعديل).')){resetState();renderAll();$('#vinfo').textContent=''}};
+$('#bSave').onclick=()=>saveProject(true);
+$('#bRestore').onclick=()=>restoreProject();
+$('#bHelp').onclick=()=>$('#dHelp').showModal();$('#hOk').onclick=()=>$('#dHelp').close();
+$('#bAbout').onclick=()=>$('#dAbout').showModal();$('#aOk').onclick=()=>$('#dAbout').close();
+$('#bSet').onclick=async()=>{
+  const st=S.settings;$('#sPre').value=st.preroll;$('#sVol').value=st.vol;$('#sLat').value=st.lat;$('#sStep').value=st.step;$('#sFps').value=st.fps;
+  $('#sAuto').checked=st.autostop;$('#sEc').checked=st.ec;$('#sNs').checked=st.ns;$('#sAgc').checked=st.agc;
+  const sel=$('#sDev');sel.innerHTML='<option value="">الافتراضي</option>';
+  try{const ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+    ds.forEach(d=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||'ميكروفون';sel.appendChild(o)});sel.value=st.dev}catch(e){}
+  $('#dSet').showModal();
+};
+$('#sOk').onclick=()=>{
+  const st=S.settings;st.preroll=clamp(+$('#sPre').value||0,0,10);st.vol=clamp(+$('#sVol').value,0,1);st.lat=clamp(+$('#sLat').value||0,0,500);
+  st.step=clamp(+$('#sStep').value||5,0.5,60);st.fps=clamp(+$('#sFps').value||30,1,120);st.autostop=$('#sAuto').checked;
+  st.ec=$('#sEc').checked;st.ns=$('#sNs').checked;st.agc=$('#sAgc').checked;st.dev=$('#sDev').value;
+  $('#dSet').close();autosave();
+};
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,textarea,select')||e.ctrlKey||e.metaKey||e.altKey||document.querySelector('dialog[open]'))return;
+  const k=e.key;
+  if(k===' '){e.preventDefault();togglePlay()}
+  else if(k==='ArrowRight'){seekBy(S.settings.step)}
+  else if(k==='ArrowLeft'){seekBy(-S.settings.step)}
+  else if(k==='.'||k==='،'&&false){$('#bFNext').click()}
+  else if(k===','||k==='،'){$('#bFPrev').click()}
+  else if(k==='r'||k==='R'||k==='ق'){rec?stopRec():startRec(sel())}
+  else if(k==='l'||k==='L'||k==='م'){$('#bLoop').click()}
+});
+window.addEventListener('beforeunload',e=>{if(rec){e.preventDefault();e.returnValue=''}});
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+vid.style.display='none';
+renderAll();requestAnimationFrame(draw);
+</script>
+</body>
+</html>
